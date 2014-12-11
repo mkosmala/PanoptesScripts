@@ -5,8 +5,7 @@ import cookielib
 import json
 import re
 import string
-from poster.encode import multipart_encode
-from poster.streaminghttp import register_openers
+import requests
 
 # Remote host set to the panoptes staging API
 global host,hostapi
@@ -86,6 +85,21 @@ def get_bearer_token(user_name,password):
 def get_userid_from_username(user_name,token):
     "Gets a user's ID from a username; returns -1 if none"
 
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    response = requests.get(hostapi+'users?login='+user_name,headers=head)
+ 
+    userid = -1
+    data = response.json()
+    if len(data["users"])>0:
+        userid = data["users"][0]["id"]
+
+    return userid
+
+# depricated. Ooh la la requests, I think I'm in love...
+def get_userid_from_username_old(user_name,token):
+    "Gets a user's ID from a username; returns -1 if none"
+
     # info
     request = urllib2.Request(hostapi+"users?login="+user_name,None)
     request.add_header("Accept","application/vnd.api+json; version=1")
@@ -146,6 +160,28 @@ def get_groupid_from_groupname(group_name,token):
     return groupid
 
 def create_group(group_name,token):
+    "Create a user group with just a group name"
+
+    values = """
+        {
+            "user_groups": {
+                "name": \"""" + group_name + """\"
+            }
+        }
+        """
+    head = {'Content-Type':'application/json',
+            'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    response = requests.post(hostapi+'groups',headers=head,data=values)
+    
+    data = response.json()
+    groupid = data["user_groups"][0]["id"]
+
+    return groupid
+
+
+# depricated
+def create_group_old(group_name,token):
     "Create a user group with just a group name"
     
     values = """
@@ -451,78 +487,47 @@ def create_subject(project_id,meta,token):
             }
         }
     }"""
-
-    request = urllib2.Request(hostapi+"subjects",data=values)
-
-    request.add_header("Content-Type","application/json")
-    request.add_header("Accept","application/vnd.api+json; version=1")
-    request.add_header("Authorization","Bearer "+token)
-
-    # request
-    try:
-        response = urllib2.urlopen(request)
-    except urllib2.HTTPError as e:
-        print 'The server couldn\'t fulfill the request.'
-        print 'Error code: ', e.code
-        print 'Error response body: ', e.read()
-    except urllib2.URLError as e:
-        print 'We failed to reach a server.'
-        print 'Reason: ', e.reason
-    else:
-        # everything is fine
-        body = response.read()
+    head = {'Content-Type':'application/json',
+            'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    response = requests.post(hostapi+'subjects',headers=head,data=values)
 
     # put it in json structure and extract id
-    data = json.loads(body)
-
+    data = response.json()
     subjid = data["subjects"][0]["id"]
     signed_urls = data["subjects"][0]["locations"][0]["image/jpeg"]
 
-    print "----"
-    print signed_urls
-    print "----"
-
-
     # -----------
     # now that we have the signed URL, we can upload the file
+    # -----------
 
-    # from http://stackoverflow.com/questions/680305/using-multipartposthandler-to-post-form-data-with-python
-    register_openers()
-    datagen, headers = multipart_encode({"image1": open("test.jpg")})
-    request = urllib2.Request(signed_urls, datagen, headers)    
-    request.add_header("Content-Type","image/jpeg")
-    
-    request.get_method = lambda: 'PUT'
+    head = {'Content-Type':'image/jpeg'}
+    image = {'file': open('test.jpg','rb')}
+    response = requests.put(signed_urls,headers=head,files=image)
 
-    print "----URL"
-    print request.get_full_url()
-    print "----Method"
-    print request.get_method()
-    print "----HeaderItems"
-    print request.header_items() 
-    print "----dir"
-    print dir(request)
-    
-    # request
-    try:
-        response = urllib2.urlopen(request)
-    except urllib2.HTTPError as e:
-        print 'The server couldn\'t fulfill the request.'
-        print 'Error code: ', e.code
-        print 'Error response body: ', e.read()
-    except urllib2.URLError as e:
-        print 'We failed to reach a server.'
-        print 'Reason: ', e.reason
-    else:
-        # everything is fine
-        body = response.read()
+    print "sending"
+    print "----"
+    print response.request.headers
+    print
+    print "receiving"
+    print "----"
+    print response.status_code
+    print response.headers
+    print response.text
 
-    print "---getURL"
-    print response.geturl()
-    print "---info"
-    print response.info()
-    print "---body"
-    print body
+    # and for now grab the URL to check
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    response = requests.get(hostapi+'subjects?id='+subjid,headers=head)
+    data = response.json()
+    host = data["subjects"][0]["locations"][0]["image/jpeg"]["host"]
+    scheme = data["subjects"][0]["locations"][0]["image/jpeg"]["scheme"]
+    path = data["subjects"][0]["locations"][0]["image/jpeg"]["path"]
+    print
+    print "Image URL"
+    print "----"
+    print scheme+'://'+host+path
+    print
     
     return subjid
 
