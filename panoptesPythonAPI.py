@@ -502,32 +502,8 @@ def create_subject(project_id,meta,token):
     # -----------
 
     head = {'Content-Type':'image/jpeg'}
-    image = {'file': open('test.jpg','rb')}
-    response = requests.put(signed_urls,headers=head,files=image)
-
-    print "sending"
-    print "----"
-    print response.request.headers
-    print
-    print "receiving"
-    print "----"
-    print response.status_code
-    print response.headers
-    print response.text
-
-    # and for now grab the URL to check
-    head = {'Accept':'application/vnd.api+json; version=1',
-            'Authorization':'Bearer '+token}
-    response = requests.get(hostapi+'subjects?id='+subjid,headers=head)
-    data = response.json()
-    host = data["subjects"][0]["locations"][0]["image/jpeg"]["host"]
-    scheme = data["subjects"][0]["locations"][0]["image/jpeg"]["scheme"]
-    path = data["subjects"][0]["locations"][0]["image/jpeg"]["path"]
-    print
-    print "Image URL"
-    print "----"
-    print scheme+'://'+host+path
-    print
+    with open('test.jpg','rb') as fp:
+        response = requests.put(signed_urls,headers=head,data=fp)
     
     return subjid
 
