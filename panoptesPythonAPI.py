@@ -6,6 +6,7 @@ import json
 import re
 import string
 import requests
+import csv
 
 # Remote host set to the panoptes staging API
 global host,hostapi
@@ -470,7 +471,7 @@ def create_workflow(token):
     return 0
 
 
-def create_subject(project_id,meta,token):
+def create_subject(project_id,meta,filename,token):
     "Create a subject and return its ID"
 
     values = """
@@ -502,8 +503,68 @@ def create_subject(project_id,meta,token):
     # -----------
 
     head = {'Content-Type':'image/jpeg'}
-    with open('test.jpg','rb') as fp:
+    with open(filename,'rb') as fp:
         response = requests.put(signed_urls,headers=head,data=fp)
     
     return subjid
 
+
+def create_subject_set(project_id,display_name,subject_list,token):
+    "Create a Subject Set given a list of subject IDs"
+
+    values = """
+        {
+            "subject_sets": {
+                "display_name": \"""" + display_name + """\",
+                "links": {
+                    "project": \"""" + str(project_id) + """\",
+                    "subjects": """ + str(subject_list) + """
+                }
+            }
+        }
+        """
+    head = {'Content-Type':'application/json',
+            'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+   
+    response = requests.post(hostapi+'subject_sets',headers=head,data=values)   
+    data = response.json()
+    subsetid = data["subject_sets"][0]["id"]
+
+    return subsetid
+
+
+def create_subject_set_from_manifest(project_id,display_name,
+                                     img_path,manifest_name,token):
+    "Create a Subject Set from a manifest of images and metadata"
+
+    # list of ids
+    subject_list = []
+
+    # read in from a file a set of subjects
+    with open(img_path+manifest_name,'rb') as csvfile:
+        freader = csv.reader(csvfile,delimiter=',')
+        # header row
+        headrow = freader.next()
+        for row in freader:
+            # file is first
+            image_file = img_path+row[0]
+            # rest is metadata
+            meta_temp = ""
+            for label,meta in zip(headrow[1:],row[1:]):
+                meta_temp = meta_temp+"\""+label+"\":\""+meta+"\","
+            # remove last comma
+            meta_str = meta_temp[:-1]
+
+            # create the subject, upload the image, and save the id
+            subjid = create_subject(project_id,meta_str,image_file,token)
+            subject_list.append(int(subjid))
+    
+            print "uploaded: "+image_file
+
+    # now we have a list of subject ids; create the subject set
+    subj_set_id = create_subject_set(project_id,display_name,subject_list,token)
+    return subj_set_id
+                                     
+
+                       

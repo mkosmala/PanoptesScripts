@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import panoptesPythonAPI
+import csv
 
 #group = "project_seasons"
 
@@ -59,7 +60,22 @@ meta = """  "Site": "Harvard Forest",
             "Camera": "StarDot NetCam SC",
             "Date": "2014-06-03",
             "Time": "12:01:38" """
+#subjid = panoptesPythonAPI.create_subject(projid,meta,"test.jpg",token)
+#print subjid
 
-subjid = panoptesPythonAPI.create_subject(projid,meta,token)
-print subjid
+# create a subject set
+disp_name = "DBF images for Simple tasks Single images workflow"
+img_path = "../"
+manifest_name = "deciduous_manifest.csv"
+#subj_set_id = panoptesPythonAPI.create_subject_set_from_manifest(
+#    projid,disp_name,img_path,manifest_name,token)
+#print subj_set_id                               
+
+subj_set_id = 41
+
+
+    
+
+        
+
 
