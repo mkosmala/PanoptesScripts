@@ -85,7 +85,7 @@ workflow = """
                 "question": "Can you see any vegetation in this image?",
                 "answers": [
                     {"value": "yes", "label": "Yes", "next": "flowers"},
-                    {"value": "no", "lable": "No", "next": null}
+                    {"value": "no", "label": "No", "next": null}
                 ],
                 "required": "1"
             },
@@ -94,7 +94,7 @@ workflow = """
                 "question": "Are there flowers visible?",
                 "answers": [
                     {"value": "yes", "label": "Yes"},
-                    {"value": "no", "lable": "No"}
+                    {"value": "no", "label": "No"}
                 ],
                 "required": "1"
             }
@@ -109,34 +109,11 @@ workflow = """
 }"""
 
 
-workflow = """
-{
-    "workflows": {
-        "display_name": "Pepper or Salt",
-        "tasks": {
-            "pepper_or_salt": {
-                "type": "single",
-                "question": "Pepper or Salt?",
-                "answers": [
-                    {"value": "pepper", "label": "Pepper"},
-                    {"value": "salt", "lable": "Salt"}
-                ]
-            }
-        },
-        "primary_language": "en-us",
-        "links": {
-            "project": \"""" + str(projid) + """\"
-        }
-    }
-}"""
-
-
 workflow_id = panoptesPythonAPI.create_workflow(workflow,token)
 
 print workflow_id
 
+#57
     
-
-        
 
 
