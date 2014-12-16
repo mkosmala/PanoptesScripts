@@ -574,7 +574,7 @@ def create_workflow(workflow,token):
             'Accept':'application/vnd.api+json; version=1',
             'Authorization':'Bearer '+token}
    
-    response = requests.post(hostapi+'workflow',headers=head,data=workflow)   
+    response = requests.post(hostapi+'workflows',headers=head,data=workflow)   
 
     print "----"
     print response.request.headers

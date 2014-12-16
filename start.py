@@ -108,6 +108,29 @@ workflow = """
     }
 }"""
 
+
+workflow = """
+{
+    "workflows": {
+        "display_name": "Pepper or Salt",
+        "tasks": {
+            "pepper_or_salt": {
+                "type": "single",
+                "question": "Pepper or Salt?",
+                "answers": [
+                    {"value": "pepper", "label": "Pepper"},
+                    {"value": "salt", "lable": "Salt"}
+                ]
+            }
+        },
+        "primary_language": "en-us",
+        "links": {
+            "project": \"""" + str(projid) + """\"
+        }
+    }
+}"""
+
+
 workflow_id = panoptesPythonAPI.create_workflow(workflow,token)
 
 print workflow_id
