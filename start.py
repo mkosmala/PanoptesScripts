@@ -74,6 +74,44 @@ manifest_name = "deciduous_manifest.csv"
 subj_set_id = 41
 
 
+# now let's create a workflow
+workflow = """
+{
+    "workflows": {
+        "display_name": "Flowers",
+        "tasks": {
+            "valid_image": {
+                "type": "single",
+                "question": "Can you see any vegetation in this image?",
+                "answers": [
+                    {"value": "yes", "label": "Yes", "next": "flowers"},
+                    {"value": "no", "lable": "No", "next": null}
+                ],
+                "required": "1"
+            },
+            "flowers": {
+                "type": "single",
+                "question": "Are there flowers visible?",
+                "answers": [
+                    {"value": "yes", "label": "Yes"},
+                    {"value": "no", "lable": "No"}
+                ],
+                "required": "1"
+            }
+        },
+        "first_task": "valid_image",
+        "primary_language": "en-us",
+        "links": {
+            "project": \"""" + str(projid) + """\",
+            "subject_sets": [\"""" + str(subj_set_id) + """\"]
+        }
+    }
+}"""
+
+workflow_id = panoptesPythonAPI.create_workflow(workflow,token)
+
+print workflow_id
+
     
 
         

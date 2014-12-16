@@ -565,6 +565,31 @@ def create_subject_set_from_manifest(project_id,display_name,
     # now we have a list of subject ids; create the subject set
     subj_set_id = create_subject_set(project_id,display_name,subject_list,token)
     return subj_set_id
-                                     
 
-                       
+                                     
+def create_workflow(workflow,token):
+    "Create a Workflow, given the json content"
+    
+    head = {'Content-Type':'application/json',
+            'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+   
+    response = requests.post(hostapi+'workflow',headers=head,data=workflow)   
+
+    print "----"
+    print response.request.headers
+    print workflow
+    print "----"
+    print response
+    print response.status_code
+    print response.text
+    print "----"
+    
+    data = response.json()
+
+    workflowid = data["workflows"][0]["id"]
+
+    return workflowid
+               
+
+
