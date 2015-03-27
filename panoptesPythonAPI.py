@@ -36,7 +36,7 @@ def get_bearer_token(user_name,password):
     csrf_token = csrf_line[first+1:second]
 
     #2. use the token to get a devise session via JSON stored in a cookie
-    devise_login_data=("{\"user\": {\"login\":\""+user_name+"\",\"password\":\""+password+
+    devise_login_data=("{\"user\": {\"display_name\":\""+user_name+"\",\"password\":\""+password+
                        "\"}, \"authenticity_token\": \""+csrf_token+"\"}")
     request = urllib2.Request(host+"users/sign_in",data=devise_login_data)
     request.add_header("Content-Type","application/json")
@@ -368,107 +368,94 @@ def create_group_project(groupid,projname,projdesc,token):
      
     return projid    
 
-def create_user_project(projname,projdesc,token):
-    "Create a project owned by self"
-
-    values = """
-    {
-        "projects": {
-            "name": \"""" + projname + """\",
-            "description": \"""" + projdesc + """\",
-            "primary_language": "en-us"
-        }
-    }"""
-    
-    request = urllib2.Request(hostapi+"projects",data=values)
-
-    request.add_header("Content-Type","application/json")
-    request.add_header("Accept","application/vnd.api+json; version=1")
-    request.add_header("Authorization","Bearer "+token)
-
-    # request
-    try:
-        response = urllib2.urlopen(request)
-    except urllib2.HTTPError as e:
-        print 'In create_user_project:'
-        print 'The server couldn\'t fulfill the request.'
-        print 'Error code: ', e.code
-        print 'Error response body: ', e.read()
-    except urllib2.URLError as e:
-        print 'We failed to reach a server.'
-        print 'Reason: ', e.reason
-    else:
-        # everything is fine
-        body = response.read()
-
-    # put it in json structure and extract id
-    data = json.loads(body)
-
-    projid = data["projects"][0]["id"]
-     
-    return projid    
 
 
-## NOT YET
-def get_projectid_from_projectname(groupid,project_name,token):
+def get_projectid_from_projectname(project_name,owner_name,token):
     "Gets a project's ID from a project name; returns -1 if none"
+
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    response = requests.get(hostapi+'projects?owner='+owner_name+
+                            "&display_name="+project_name,
+                            headers=head)
+
+    projid = -1
+    data = response.json()
+    
+    if len(data["projects"])>0:
+        projid = data["projects"][0]["id"]
+    
+    return projid
+
+
+
+def get_userid_from_username(user_name,token):
+    "Gets a user's ID from a username; returns -1 if none"
+
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    response = requests.get(hostapi+'users?login='+user_name,headers=head)
+ 
+    userid = -1
+    data = response.json()
+    if len(data["users"])>0:
+        userid = data["users"][0]["id"]
+
+    return userid
+
+
+
+
+
+## THIS METHOD IS UNFINISHED
+def get_user_projects(user,token):
+    "Gets the ids for all a user's projects"
+ 
+    head = {'Content-Type':'application/json',
+            'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+   
+    response = requests.get(hostapi+'projects?owner='+user,headers=head)   
+    
+    data = response.json()
+
+    print data
+
     return
 
-## NOT YET
-def create_workflow(token):
-    "Creates a workflow"
+
+def create_workflow(projid,wfname,tasks,token):
+    "Create a Workflow"
+
+    # pull out the first task (after first quotes) (ugly, but works)
+    first_task = tasks.split('\"')[1]  
 
     values = """
-    {
-        "workflows": {
-            "display_name": "Do some round stuff",
-            "tasks":  {
-                "roundness": {
-                    "type": "single",
-                    "question": "How round is it?",
-                    "answers": [
-                        {"value": "very", "label": "Very"},
-                        {"value": "sorta", "label": "In between"},
-                        {"value": "not", "label": "Cigar shaped"}
-                    ],
-                    "next": null
+        {
+            "workflows": {
+                "display_name": \"""" + wfname + """\",
+                "first_task": \"""" + first_task + """\",
+                "tasks": """ + tasks + """,
+                "primary_language": "en-us",
+                "links": {
+                    "project": """ + projid + """
                 }
-            },
-            "primary_language": "en-us",
-            "links": {
-                "project": "60"
             }
         }
-    }"""
+        """
 
+    head = {'Content-Type':'application/json',
+            'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
 
-    request = urllib2.Request(hostapi+"workflow",data=values)
+    response = requests.post(hostapi+'workflows',headers=head,data=values)
+    
+    data = response.json()    
+    workflowid = data["workflows"][0]["id"]
 
-    request.add_header("Content-Type","application/json")
-    request.add_header("Accept","application/vnd.api+json; version=1")
-    request.add_header("Authorization","Bearer "+token)
+    return workflowid
 
-    # request
-    try:
-        response = urllib2.urlopen(request)
-    except urllib2.HTTPError as e:
-        print 'The server couldn\'t fulfill the request.'
-        print 'Error code: ', e.code
-        print 'Error response body: ', e.read()
-    except urllib2.URLError as e:
-        print 'We failed to reach a server.'
-        print 'Reason: ', e.reason
-    else:
-        # everything is fine
-        body = response.read()
-
-    # put it in json structure and extract id
-    data = json.loads(body)
-
-    print body
-    #projid = data["projects"][0]["id"]
-     
-    return 0
+    
 
 
 def create_subject(project_id,meta,filename,token):
@@ -509,30 +496,6 @@ def create_subject(project_id,meta,filename,token):
     return subjid
 
 
-def create_subject_set(project_id,display_name,subject_list,token):
-    "Create a Subject Set given a list of subject IDs"
-
-    values = """
-        {
-            "subject_sets": {
-                "display_name": \"""" + display_name + """\",
-                "links": {
-                    "project": \"""" + str(project_id) + """\",
-                    "subjects": """ + str(subject_list) + """
-                }
-            }
-        }
-        """
-    head = {'Content-Type':'application/json',
-            'Accept':'application/vnd.api+json; version=1',
-            'Authorization':'Bearer '+token}
-   
-    response = requests.post(hostapi+'subject_sets',headers=head,data=values)   
-    data = response.json()
-    subsetid = data["subject_sets"][0]["id"]
-
-    return subsetid
-
 
 def create_subject_set_from_manifest(project_id,display_name,
                                      img_path,manifest_name,token):
@@ -566,30 +529,301 @@ def create_subject_set_from_manifest(project_id,display_name,
     subj_set_id = create_subject_set(project_id,display_name,subject_list,token)
     return subj_set_id
 
-                                     
-def create_workflow(workflow,token):
-    "Create a Workflow, given the json content"
+
+# OLD                  
+#def create_workflow(workflow,token):
+#    "Create a Workflow, given the json content"
+#    
+#    head = {'Content-Type':'application/json',
+#            'Accept':'application/vnd.api+json; version=1',
+#            'Authorization':'Bearer '+token}
+#   
+#    response = requests.post(hostapi+'workflows',headers=head,data=workflow)   #
+#
+#    print "----"
+#    print response.request.headers
+#    print workflow
+#    print "----"
+#    print response
+#    print response.status_code
+#    print response.text
+#    print "----"
+#    
+#    data = response.json()
+#
+#    workflowid = data["workflows"][0]["id"]
+#
+#    return workflowid
+               
+
+def create_user_project(projname,byline,token):
+    "Create a project owned by self"
+
+    projectinfo = """
+        {
+            "projects": {
+                "display_name": \"""" + projname + """\",
+                "description": \"""" + byline + """\",
+                "primary_language": "en-us",
+                "private": true
+            }
+        }
+        """
+    head = {'Content-Type':'application/json',
+            'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+
+    response = requests.post(hostapi+'projects',headers=head,data=projectinfo)   
+    data = response.json()
+    projid = data["projects"][0]["id"]
+
+    return projid
+
+
+
+def create_subject_set(project_id,display_name,subject_list,token):
+    "Create a Subject Set given a list of subject IDs"
+
+    values = """
+        {
+            "subject_sets": {
+                "display_name": \"""" + display_name + """\",
+                "links": {
+                    "project": \"""" + str(project_id) + """\",
+                    "subjects": """ + str(subject_list) + """
+                }
+            }
+        }
+        """
+    head = {'Content-Type':'application/json',
+            'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+   
+    response = requests.post(hostapi+'subject_sets',headers=head,data=values)   
+    data = response.json()
+    subsetid = data["subject_sets"][0]["id"]
+
+    return subsetid
+
+
+def create_empty_subject_set(project_id,display_name,token):
+    "Create an empty Subject Set"
+
+    values = """
+        {
+            "subject_sets": {
+                "display_name": \"""" + display_name + """\",
+                "links": {
+                    "project": \"""" + str(project_id) + """\" 
+                }
+            }
+        }
+        """
+    head = {'Content-Type':'application/json',
+            'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+   
+    response = requests.post(hostapi+'subject_sets',headers=head,data=values)   
+    data = response.json() 
+    subsetid = data["subject_sets"][0]["id"]
+
+    return subsetid
+
+def get_subject_set(project_id,display_name,token):
+    "Get the requested Subject Set or return -1"
+
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    
+    response = requests.get(hostapi+'subject_sets?project_id='+project_id+
+                            "&display_name="+display_name,
+                            headers=head)
+
+    subjsetid = -1
+    data = response.json()
+
+    if len(data["subject_sets"])>0:
+
+        # check each one until can filter by display_name
+        for ss in data["subject_sets"]:
+            if ss["display_name"] == display_name:
+                subjsetid = ss["id"]
+
+    return subjsetid
+
+
+
+
+
+def add_subject_to_subject_set(subject_set_id,subject_id,token):
+    "Add a given Subject to a given SubjectSet"
+
+    values = """
+        {
+            "set_member_subjects": {
+                "links": {
+                    "subject": """ + subject_id + """,
+                    "subject_set": """ + subject_set_id + """
+                }
+            }
+        }
+        """
+    head = {'Content-Type':'application/json',
+            'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+   
+    response = requests.post(hostapi+'set_member_subjects',headers=head,data=values)   
+    
+    return
+
+
+def get_project_subject_sets(projid,token):
+    "Return all the subject set IDs for this project"
+
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    
+    response = requests.get(hostapi+'subject_sets?per_page=50' +
+                            '&project_id='+projid,
+                            headers=head)
+    data = response.json()
+
+    # initialize the return list
+    toret = []
+
+    if len(data["subject_sets"])>0:
+
+        # add all the IDs
+        for ss in data["subject_sets"]:
+            toret.append(ss["id"])
+
+    return toret
+
+
+def get_subject_set_name(projid,ssid,token):
+    "Return the subject set name given its ID"
+
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    
+    response = requests.get(hostapi+'subject_sets?project_id='+projid+
+                            "&id="+ssid,
+                            headers=head)
+
+    data = response.json()
+
+    # check each one until can filter by id
+    for ss in data["subject_sets"]:
+        if ss["id"] == ssid:
+            ssname = ss["display_name"]
+
+    return ssname
+    
+
+def get_workflow(projid,wfname,token):
+    "Return the workflow ID given its name. Return -1 if it doesn't exist"
+
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    
+    response = requests.get(hostapi+'workflows?project_id='+projid+
+                            "&display_name="+wfname,
+                            headers=head)
+
+    workflowid = -1
+    data = response.json()
+
+    if len(data["workflows"])>0:
+
+        # check each one until can filter by display_name
+        for wf in data["workflows"]:
+            if wf["display_name"] == wfname:
+                workflowid = wf["id"]
+
+    return workflowid
+    
+
+def link_subject_set_and_workflow(ssid,wfid,token):
+    "Link the given subject set to the given workflow"
+
+    values = """
+        {
+            "subject_sets": [ """ + ssid + """ ]
+        }
+        """
     
     head = {'Content-Type':'application/json',
             'Accept':'application/vnd.api+json; version=1',
             'Authorization':'Bearer '+token}
    
-    response = requests.post(hostapi+'workflows',headers=head,data=workflow)   
-
-    print "----"
-    print response.request.headers
-    print workflow
-    print "----"
-    print response
-    print response.status_code
-    print response.text
-    print "----"
+    response = requests.post(hostapi+'workflows/'+str(wfid)+'/links/subject_set',
+                             headers=head,data=values)   
     
+    return
+    
+
+
+def set_science_case(projid,science_case,token):
+    "Add or change the science case"
+
+    case = """
+        {
+            "projects:" {
+                "science_case": \"""" + science_case + """\"
+            }
+        }
+        """
+    head = {'Content-Type':'application/json',
+            'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+
+    requests.post(hostapi+'projects/'+projid,headers=head,data=case)
+    
+    return 
+    
+
+
+def dump_project(project_name,owner_name,token):
+    "Print all the content from a project"
+
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    response = requests.get(hostapi+'projects?owner='+owner_name+
+                            "&display_name="+project_name,
+                            headers=head)
+
     data = response.json()
 
-    workflowid = data["workflows"][0]["id"]
+    print json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+    
+    return 
+    
+def dump_workflow(workflow_id,token):
+    "Print all the content from a workflow"
 
-    return workflowid
-               
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    response = requests.get(hostapi+'workflows?id='+str(workflow_id),
+                            headers=head)
 
+    data = response.json()
+
+    print json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+    
+    return 
+
+
+def dump_subject_set(subjectset_id,token):
+    "Print all the content from a subject set"
+
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    response = requests.get(hostapi+'subject_sets?id='+str(subjectset_id),
+                            headers=head)
+
+    data = response.json()
+
+    print json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+    
+    return 
 
