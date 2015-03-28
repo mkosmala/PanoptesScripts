@@ -3,7 +3,7 @@
 import panoptesPythonAPI
 import csv
 import os
-
+ 
 
 # TO DO
 # create Season Spotter project under my userid

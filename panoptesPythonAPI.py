@@ -654,6 +654,31 @@ def get_subject_set(project_id,display_name,token):
 
 
 
+#def add_subject_to_subject_set(subject_set_id,subject_id,token):
+#    "Add a given Subject to a given SubjectSet"
+#
+#    values = """
+#        {
+#            "subjects": [ """ + subject_id + """ ]
+#        }
+#        """
+#    head = {'Content-Type':'application/json',
+#            'Accept':'application/vnd.api+json; version=1',
+#            'Authorization':'Bearer '+token}
+#   
+#    response = requests.post(hostapi+'subject_sets/'+subject_set_id+'/links/subject',
+#                             headers=head,data=values)
+#
+#
+#    print "trying to add subject " + subject_id + " to subject set " + subject_set_id + "\n"
+#    print response
+#    
+#    data = response.json()
+#    print json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+#    exit(1)
+#    
+#    return
+
 
 def add_subject_to_subject_set(subject_set_id,subject_id,token):
     "Add a given Subject to a given SubjectSet"
@@ -672,7 +697,14 @@ def add_subject_to_subject_set(subject_set_id,subject_id,token):
             'Accept':'application/vnd.api+json; version=1',
             'Authorization':'Bearer '+token}
    
-    response = requests.post(hostapi+'set_member_subjects',headers=head,data=values)   
+    response = requests.post(hostapi+'set_member_subjects',headers=head,data=values)
+
+#    print "trying to add subject " + subject_id + " to subject set " + subject_set_id + "\n"    
+#    data = response.json()
+#    print json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+#    print "\n\nSubjectSet:\n"
+#    dump_subject_set(subject_set_id,token)
+#    exit(1)
     
     return
 
@@ -758,6 +790,9 @@ def link_subject_set_and_workflow(ssid,wfid,token):
    
     response = requests.post(hostapi+'workflows/'+str(wfid)+'/links/subject_set',
                              headers=head,data=values)   
+
+    print response
+    
     
     return
     
@@ -827,3 +862,38 @@ def dump_subject_set(subjectset_id,token):
     
     return 
 
+
+
+def dump_all_projects(owner_name,token):
+    "Print the id and name of all the projects owned by owner"
+
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    response = requests.get(hostapi+'projects?per_page=50&owner='+owner_name,
+                            headers=head)
+
+    data = response.json()
+
+    print json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+
+    for proj in data["projects"]:
+        print proj["id"] + ": " + proj["display_name"]
+    
+    return 
+
+
+def delete_project(proj_id,token):
+    "Delete the project with the given ID"
+
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token,
+            'If-Match':str(proj_id)}
+    response = requests.delete(hostapi+'projects/'+str(proj_id),
+                               headers=head)
+
+    print response.json()    
+
+    return    
+
+
+    
