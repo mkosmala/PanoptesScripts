@@ -572,7 +572,7 @@ def create_user_project(proj,token):
                 "faq": \"""" + proj[5] + """\",
                 "result": \"""" + proj[6] + """\",
                 "primary_language": "en-us",
-                "private": true
+                "private": false
             }
         }
         """
@@ -821,7 +821,7 @@ def set_science_case(projid,science_case,token):
 
     values = """
         {
-            "projects:" {
+            "projects": {
                 "science_case": \"""" + science_case + """\"
             }
         }
@@ -843,7 +843,7 @@ def set_introduction(projid,intro,token):
 
     values = """
         {
-            "project_contents:" {
+            "project_contents": {
                 "introduction": \"""" + intro + """\"
             }
         }
@@ -858,9 +858,35 @@ def set_introduction(projid,intro,token):
     
     return 
 
+def add_collaborator(projid,person_id,token):
+    "Add a collaborator to the given project"
 
+    values = """
+        {
+            "project_roles": {
+                "roles": ["collaborator"],
+                "links": {
+                    "project": \"""" + str(projid) + """\",
+                    "user": \"""" + str(person_id) + """\"
+                }
+            }
+        }
+        """
+    head = {'Content-Type':'application/json',
+            'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
 
+    response = requests.post(hostapi+'project_roles',headers=head,data=values)
 
+    data = response.json()
+
+    print json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+
+    debug_response(values,response)
+    
+    exit(1)
+
+    return
 
 def dump_project(project_name,owner_name,token):
     "Print all the content from a project"

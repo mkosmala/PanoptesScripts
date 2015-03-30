@@ -20,10 +20,8 @@ workflow_dir = "workflows/"
 linkfile = "subjectsets_and_workflows.csv"
 
 
-
 #project = "Season Spotter"
-project = "Spotter16"
-
+project = "Spotter21"
 
 byline = "default byline"
 introduction = "default introduction"
@@ -32,6 +30,8 @@ education = "useful for education"
 faq = "frequently asked questions"
 guide = "spot the seasons"
 results = "no results yet"
+
+collaborators = ["imaginaryfriend"]
 
 
 
@@ -53,6 +53,25 @@ use_twice = [ "DB_year","EB_year","SH_year","DN_year","EN_year","GR_year",
 
 
 
+
+#---
+# Add collaborators
+#---
+def add_collaborators(projid,token):
+
+    # add each collaborator
+    for coll in collaborators:
+
+        # look up their ID
+        collid = panoptesPythonAPI.get_userid_from_username(coll,token)
+        if collid == -1:
+            print "Warning! User \"" + coll + "\" does not exist. Cannot add as collaborator."
+
+        else:    
+            print "Adding collaborator: " + coll
+            panoptesPythonAPI.add_collaborator(projid,collid,token)
+
+    return
 
 
 #---
@@ -192,9 +211,7 @@ if projid==-1:
 print "   ID: " + projid + "\n"
 
 # add collaborators
-
-# add project contents
-#create_project_contents(projid,token)
+#add_collaborators(projid,token)
 
 # add workflows
 create_workflows(projid,token)

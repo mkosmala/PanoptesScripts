@@ -12,13 +12,17 @@ token = panoptesPythonAPI.get_bearer_token("mkosmala","hard2guess")
 #panoptesPythonAPI.delete_project(153,token)
 
 
-#panoptesPythonAPI.dump_project("Spotter14","mkosmala",token)
-#for ind in range(379,388):
-#    panoptesPythonAPI.dump_workflow(ind,token)
-#for ind in range(627,638) :
-#    panoptesPythonAPI.dump_subject_set(ind,token)
-
-panoptesPythonAPI.dump_project_contents(186,token)
+panoptesPythonAPI.dump_project("Spotter18","mkosmala",token)
+print "--- contents ---"
+panoptesPythonAPI.dump_project_contents(192,token)
+print "--- workflows ---"
+for ind in range(439,449):
+    print ind
+    panoptesPythonAPI.dump_workflow(ind,token)
+print "--- subject sets ---"
+for ind in range(699,711):
+    print ind
+    panoptesPythonAPI.dump_subject_set(ind,token)
 
 print "\n"
 #panoptesPythonAPI.dump_project("Builder_2015_03_27","mkosmala",token)
@@ -26,4 +30,4 @@ print "\n"
 #panoptesPythonAPI.dump_subject_set(399,token)
 #panoptesPythonAPI.dump_subject_set(400,token)
 
-panoptesPythonAPI.dump_project_contents(170,token)
+#panoptesPythonAPI.dump_project_contents(170,token)
