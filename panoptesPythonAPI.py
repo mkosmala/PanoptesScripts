@@ -556,25 +556,34 @@ def create_subject_set_from_manifest(project_id,display_name,
 #    return workflowid
                
 
-def create_user_project(projname,byline,token):
+
+
+def create_user_project(proj,token):
     "Create a project owned by self"
 
     projectinfo = """
         {
             "projects": {
-                "display_name": \"""" + projname + """\",
-                "description": \"""" + byline + """\",
+                "display_name": \"""" + proj[0] + """\",
+                "description": \"""" + proj[1] + """\",
+                "introduction": \"""" + proj[2] + """\",
+                "science_case": \"""" + proj[3] + """\",
+                "education_content": \"""" + proj[4] + """\",
+                "faq": \"""" + proj[5] + """\",
+                "result": \"""" + proj[6] + """\",
                 "primary_language": "en-us",
                 "private": true
             }
         }
         """
+    
     head = {'Content-Type':'application/json',
             'Accept':'application/vnd.api+json; version=1',
             'Authorization':'Bearer '+token}
 
     response = requests.post(hostapi+'projects',headers=head,data=projectinfo)   
     data = response.json()
+    
     projid = data["projects"][0]["id"]
 
     return projid
@@ -780,7 +789,7 @@ def link_subject_set_and_workflow(ssid,wfid,token):
 
     values = """
         {
-            "subject_sets": [ """ + ssid + """ ]
+            "subject_sets": [ \"""" + ssid + """\" ]
         }
         """
     
@@ -788,20 +797,29 @@ def link_subject_set_and_workflow(ssid,wfid,token):
             'Accept':'application/vnd.api+json; version=1',
             'Authorization':'Bearer '+token}
    
-    response = requests.post(hostapi+'workflows/'+str(wfid)+'/links/subject_set',
+    response = requests.post(hostapi+'workflows/'+str(wfid)+'/links/subject_sets',
                              headers=head,data=values)   
 
-    print response
-    
-    
     return
     
 
+def debug_response(values,response):
+    "For debugging"
+    
+    print "URL: " + response.url + "\n"
+    print "Payload: " + values + "\n"
+    print "Headers: " + str(response.request.headers) + "\n"
+    print "Status code: " + str(response.status_code) + "\n"
+    print "Response headers: " + str(response.headers) + "\n"
+    print "Response text: " + response.text + "\n"
+    return    
 
+
+# OBSOLETE
 def set_science_case(projid,science_case,token):
     "Add or change the science case"
 
-    case = """
+    values = """
         {
             "projects:" {
                 "science_case": \"""" + science_case + """\"
@@ -812,10 +830,36 @@ def set_science_case(projid,science_case,token):
             'Accept':'application/vnd.api+json; version=1',
             'Authorization':'Bearer '+token}
 
-    requests.post(hostapi+'projects/'+projid,headers=head,data=case)
+    response = requests.post(hostapi+'projects/'+projid,headers=head,data=values)
+
+    debug_response(values,response)
     
     return 
     
+
+# OBSOLETE
+def set_introduction(projid,intro,token):
+    "Add or change the introduction"
+
+    values = """
+        {
+            "project_contents:" {
+                "introduction": \"""" + intro + """\"
+            }
+        }
+        """
+    head = {'Content-Type':'application/json',
+            'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+
+    response = requests.post(hostapi+'project_contents/'+projid,headers=head,data=values)
+
+    debug_response(values,response)
+    
+    return 
+
+
+
 
 
 def dump_project(project_name,owner_name,token):
@@ -880,6 +924,21 @@ def dump_all_projects(owner_name,token):
         print proj["id"] + ": " + proj["display_name"]
     
     return 
+
+def dump_project_contents(proj_id,token):
+    "Print all the contents of a project"
+
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    response = requests.get(hostapi+'project_contents?id='+str(proj_id),
+                            headers=head)
+
+    data = response.json()
+
+    print json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+    
+    return 
+    
 
 
 def delete_project(proj_id,token):

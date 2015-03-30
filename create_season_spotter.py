@@ -3,7 +3,7 @@
 import panoptesPythonAPI
 import csv
 import os
- 
+
 
 # TO DO
 # create Season Spotter project under my userid
@@ -15,16 +15,24 @@ import os
 
 # this file contains all the images and relevent metadata,
 # including the subject set to which they each belong
-manifestfile = "beta_manifest.csv"
-workflow_dir = "workflows\\"
+manifestfile = "beta_manifest_short.csv"
+workflow_dir = "workflows/"
 linkfile = "subjectsets_and_workflows.csv"
 
 
-group = "season_spotter_group"
+
 #project = "Season Spotter"
-project = "Drawing"
+project = "Spotter16"
+
+
 byline = "default byline"
+introduction = "default introduction"
 science = "default science case"
+education = "useful for education"
+faq = "frequently asked questions"
+guide = "spot the seasons"
+results = "no results yet"
+
 
 
 # vegetation type lookup
@@ -45,30 +53,6 @@ use_twice = [ "DB_year","EB_year","SH_year","DN_year","EN_year","GR_year",
 
 
 
-# ------------------------------
-# add various project components
-# ------------------------------
-def create_project_contents(projid,token):
-
-    # upload and link avatar/logo
-
-    # upload and link background
-
-    # add/change description/byline
-
-    # add introduction
-
-    # add science case
-    print "Adding science case"
-    panoptesPythonAPI.set_science_case(projid,science,token)
-
-    # add education_content
-
-    # add FAQ
-
-    # add guide
-
-    return
 
 
 #---
@@ -84,9 +68,11 @@ def create_workflows(projid,token):
         with open(wf_path,'r') as wffile:
             workflow = wffile.read().replace('\n', '')
 
+            wfname = wf.split('.')[0]
+
             # and build it
-            print "Building workflow: " + wf 
-            panoptesPythonAPI.create_workflow(projid,wf,workflow,token)
+            print "Building workflow: " + wfname
+            panoptesPythonAPI.create_workflow(projid,wfname,workflow,token)
 
     return
 
@@ -201,12 +187,14 @@ token = panoptesPythonAPI.get_bearer_token("mkosmala","hard2guess")
 projid = panoptesPythonAPI.get_projectid_from_projectname(project,"mkosmala",token)
 if projid==-1:
     print "Creating project: " + project
-    projid = panoptesPythonAPI.create_user_project(project,byline,token)
+    project_info = [project,byline,introduction,science,education,faq,results]
+    projid = panoptesPythonAPI.create_user_project(project_info,token)
+print "   ID: " + projid + "\n"
 
 # add collaborators
 
 # add project contents
-create_project_contents(projid,token)
+#create_project_contents(projid,token)
 
 # add workflows
 create_workflows(projid,token)
