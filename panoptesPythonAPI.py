@@ -83,12 +83,15 @@ def get_bearer_token(user_name,password):
     
     return bearer_token
 
+
+
+
 def get_userid_from_username(user_name,token):
     "Gets a user's ID from a username; returns -1 if none"
 
     head = {'Accept':'application/vnd.api+json; version=1',
             'Authorization':'Bearer '+token}
-    response = requests.get(hostapi+'users?login='+user_name,headers=head)
+    response = requests.get(hostapi+'users?display_name='+user_name,headers=head)
  
     userid = -1
     data = response.json()
@@ -389,21 +392,6 @@ def get_projectid_from_projectname(project_name,owner_name,token):
 
 
 
-def get_userid_from_username(user_name,token):
-    "Gets a user's ID from a username; returns -1 if none"
-
-    head = {'Accept':'application/vnd.api+json; version=1',
-            'Authorization':'Bearer '+token}
-    response = requests.get(hostapi+'users?login='+user_name,headers=head)
- 
-    userid = -1
-    data = response.json()
-    if len(data["users"])>0:
-        userid = data["users"][0]["id"]
-
-    return userid
-
-
 
 
 
@@ -644,7 +632,9 @@ def get_subject_set(project_id,display_name,token):
     head = {'Accept':'application/vnd.api+json; version=1',
             'Authorization':'Bearer '+token}
     
-    response = requests.get(hostapi+'subject_sets?project_id='+project_id+
+    response = requests.get(hostapi+"subject_sets?" +
+                            "page_size=50" +
+                            "&project_id="+project_id+
                             "&display_name="+display_name,
                             headers=head)
 
@@ -801,7 +791,42 @@ def link_subject_set_and_workflow(ssid,wfid,token):
                              headers=head,data=values)   
 
     return
+
+
+# NOT FINISHED
+def duplicate_subject_set(ssid,token):
+    "Create a duplicate subject set for the same project and return its ID"
+
+    # get the passsed subject set
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    response = requests.get(hostapi+'subject_sets?id='+str(ssid),
+                            headers=head)
+    data = response.json()
+    oldname = data["subject_sets"][0]["display_name"]
+    proj_id = data["subject_sets"][0]["links"]["project"]
+    #!!! Should copy retirement rules, too, but not ready for that yet
+
+    # increment the name
+    if len(oldname) > 7 and oldname[-6:-1]=="_copy":
+        ind = int(oldname[-1])
+        ind = ind + 1
+        newname = oldname[0:-1] + str(ind)
+    else:
+        newname = oldname + "_copy1"
+        
+    # get the linked subjects to the passed subject set
+    # issue of many, many subjects... and per_page
+    head = {'Accept':'application/vnd.api+json; version=1',
+            'Authorization':'Bearer '+token}
+    response = requests.get(hostapi+'set_member_subjects?subject_set_id='+str(ssid),
+                            headers=head)
+    data = response.json()
     
+    return
+       
+    
+
 
 def debug_response(values,response):
     "For debugging"
@@ -878,14 +903,10 @@ def add_collaborator(projid,person_id,token):
 
     response = requests.post(hostapi+'project_roles',headers=head,data=values)
 
-    data = response.json()
-
-    print json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
-
-    debug_response(values,response)
+    #data = response.json()
+    #print json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+    #debug_response(values,response)
     
-    exit(1)
-
     return
 
 def dump_project(project_name,owner_name,token):

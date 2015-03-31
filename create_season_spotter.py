@@ -15,13 +15,13 @@ import os
 
 # this file contains all the images and relevent metadata,
 # including the subject set to which they each belong
-manifestfile = "beta_manifest_short.csv"
+manifestfile = "beta_manifest.csv"
 workflow_dir = "workflows/"
 linkfile = "subjectsets_and_workflows.csv"
 
 
-#project = "Season Spotter"
-project = "Spotter21"
+
+project = "Season Spotter Alpha"
 
 byline = "default byline"
 introduction = "default introduction"
@@ -68,7 +68,7 @@ def add_collaborators(projid,token):
             print "Warning! User \"" + coll + "\" does not exist. Cannot add as collaborator."
 
         else:    
-            print "Adding collaborator: " + coll
+            print "Adding collaborator: " + coll + ", ID: " + str(collid)
             panoptesPythonAPI.add_collaborator(projid,collid,token)
 
     return
@@ -123,12 +123,24 @@ def create_subject_sets_and_subjects(projid,token):
             else:
                 vegtype = vegabbr
 
-            # check to see if the subject set exists; create it if not
-            subjsetnum = panoptesPythonAPI.get_subject_set(projid,subjset,token)
-            if subjsetnum == -1:
-                print "Building SubjectSet: " + subjset 
-                subjsetnum = panoptesPythonAPI.create_empty_subject_set(projid,subjset,token)
+            # for vegetation types that get used twice, append "simple" and "complex"
+            if subjset in use_twice:
+                subjset1 = subjset + "_simple"
+                subjset2 = subjset + "_complex"
+            else:
+                subjset1 = subjset
 
+            # check to see if the subject set(s) exists; create it if not
+            subjsetnum1 = panoptesPythonAPI.get_subject_set(projid,subjset1,token)
+            if subjsetnum1 == -1:
+                print "Building SubjectSet: " + subjset1 
+                subjsetnum1 = panoptesPythonAPI.create_empty_subject_set(projid,subjset1,token)
+            if subjset in use_twice:
+                subjsetnum2 = panoptesPythonAPI.get_subject_set(projid,subjset2,token)
+                if subjsetnum2 == -1:
+                    print "Building SubjectSet: " + subjset2
+                    subjsetnum2 = panoptesPythonAPI.create_empty_subject_set(projid,subjset2,token)
+                
             # create the metadata object
             meta = """ "Camera": \"""" + site + """\",
                        "Location": \"""" + loc + """\",
@@ -142,9 +154,12 @@ def create_subject_sets_and_subjects(projid,token):
             subjid = panoptesPythonAPI.create_subject(projid,meta,image,token)
 
             # add it to the subject set(s)
-            print "Linking Subject: " + image
-            panoptesPythonAPI.add_subject_to_subject_set(subjsetnum,subjid,token)
-
+            print "Linking Subject " + image + " to Subject Set " + subjset1
+            panoptesPythonAPI.add_subject_to_subject_set(subjsetnum1,subjid,token)
+            if subjset in use_twice:
+                print "Linking Subject " + image + " to Subject Set " + subjset2
+                panoptesPythonAPI.add_subject_to_subject_set(subjsetnum2,subjid,token)
+        
     return
 
 
@@ -177,18 +192,42 @@ def link_subject_sets_and_workflows(projid,token):
         # get the subjectset name
         ssname = panoptesPythonAPI.get_subject_set_name(projid,ssid,token)
 
-        # look through the links for matches
+        #allwf = []
+
+        # look through the links for workflow matches
         for eachpair in linklist:
 
+            filewf = eachpair[0]
+            filess = eachpair[1]
+            filegrp = eachpair[2]
+
+            # take into account subjectsets that are used twice
+            if filess in use_twice:
+                ssmatch = filess + "_" + filegrp
+            else:
+                ssmatch = filess
+
             # and link the matches
-            if eachpair[1] == ssname:
+            if ssmatch == ssname:
 
                 # get the workflow id
-                wfid = panoptesPythonAPI.get_workflow(projid,eachpair[0],token)
+                wfid = panoptesPythonAPI.get_workflow(projid,filewf,token)
+
+                # debugging
+                #print "BEFORE"
+                #allwf.append(wfid)
+                #for awf in allwf:
+                #    panoptesPythonAPI.dump_workflow(awf,token)
 
                 # link
-                print "Linking subject set " + ssname + " to workflow " + eachpair[0]
+                print "Linking subject set " + ssname + " to workflow " + filewf
                 panoptesPythonAPI.link_subject_set_and_workflow(ssid,wfid,token)
+
+                #print "AFTER"
+                #allwf.append(wfid)
+                #for awf in allwf:
+                #    panoptesPythonAPI.dump_workflow(awf,token)
+
 
     return
     
@@ -208,10 +247,10 @@ if projid==-1:
     print "Creating project: " + project
     project_info = [project,byline,introduction,science,education,faq,results]
     projid = panoptesPythonAPI.create_user_project(project_info,token)
-print "   ID: " + projid + "\n"
+print "   ID: " + projid 
 
 # add collaborators
-#add_collaborators(projid,token)
+add_collaborators(projid,token)
 
 # add workflows
 create_workflows(projid,token)
