@@ -31,7 +31,7 @@ def get_bearer_token(user_name,password):
     # grep for csrf-token
     csrf_line = re.findall(".+csrf-token.+",body)[0]
     # and extract it
-    first = string.find(csrf_line,'"')
+    first = string.find(csrf_line,'content="') + 8
     second = string.find(csrf_line,'"',first+1)
     csrf_token = csrf_line[first+1:second]
 
@@ -553,9 +553,8 @@ def create_user_project(proj,token):
         {
             "projects": {
                 "display_name": \"""" + proj[0] + """\",
-                "description": \"""" + proj[1] + """\",
+                "description": "description nothing here",
                 "introduction": \"""" + proj[2] + """\",
-                "science_case": \"""" + proj[3] + """\",
                 "education_content": \"""" + proj[4] + """\",
                 "faq": \"""" + proj[5] + """\",
                 "result": \"""" + proj[6] + """\",
@@ -564,6 +563,20 @@ def create_user_project(proj,token):
             }
         }
         """
+
+# doesn't work
+#                "description": \"""" + proj[1] + """\",
+#                "science_case": \"""" + proj[3] + """\",
+
+
+
+#                "avatar": \"""" + proj[7] + """\",
+#                "background_image": \"""" + proj[8] + """\",
+
+
+    print
+    print projectinfo
+    print
     
     head = {'Content-Type':'application/json',
             'Accept':'application/vnd.api+json; version=1',
@@ -714,7 +727,7 @@ def get_project_subject_sets(projid,token):
     head = {'Accept':'application/vnd.api+json; version=1',
             'Authorization':'Bearer '+token}
     
-    response = requests.get(hostapi+'subject_sets?per_page=50' +
+    response = requests.get(hostapi+'subject_sets?page_size=50' +
                             '&project_id='+projid,
                             headers=head)
     data = response.json()
