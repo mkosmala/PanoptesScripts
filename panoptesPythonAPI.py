@@ -549,40 +549,29 @@ def create_subject_set_from_manifest(project_id,display_name,
 def create_user_project(proj,token):
     "Create a project owned by self"
 
+    info = json.dumps(proj)
+
     projectinfo = """
         {
-            "projects": {
-                "display_name": \"""" + proj[0] + """\",
-                "description": "description nothing here",
-                "introduction": \"""" + proj[2] + """\",
-                "education_content": \"""" + proj[4] + """\",
-                "faq": \"""" + proj[5] + """\",
-                "result": \"""" + proj[6] + """\",
-                "primary_language": "en-us",
-                "private": false
-            }
+            "projects": """ + info + """
         }
         """
 
-# doesn't work
-#                "description": \"""" + proj[1] + """\",
-#                "science_case": \"""" + proj[3] + """\",
-
-
-
-#                "avatar": \"""" + proj[7] + """\",
-#                "background_image": \"""" + proj[8] + """\",
-
-
-    print
-    print projectinfo
-    print
-    
     head = {'Content-Type':'application/json',
             'Accept':'application/vnd.api+json; version=1',
             'Authorization':'Bearer '+token}
 
-    response = requests.post(hostapi+'projects',headers=head,data=projectinfo)   
+    response = requests.post(hostapi+'projects',headers=head,data=projectinfo)
+
+    print projectinfo
+    #print "----"
+    #print response.request.headers
+    #print "----"
+    #print response
+    #print response.status_code
+    #print response.text
+    #print "----"
+    
     data = response.json()
     
     projid = data["projects"][0]["id"]
